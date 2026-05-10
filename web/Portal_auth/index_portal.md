@@ -64,8 +64,6 @@ sequenceDiagram
 
 # 校园网认证工具
 
-适用于 `aaa.gxmzu.edu.cn` 认证系统的 GUI/TUI 客户端，支持自动心跳保活、系统托盘驻留。
-
 ---
 
 ## 运行方式
