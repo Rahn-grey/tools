@@ -65,6 +65,10 @@ sequenceDiagram
 # 校园网认证工具
 
 ---
+## 下载链接
+[auth_tool](auth_tool.py) python源代码
+[校园网认证](校园网认证.exe) 编译好的windows源代码 基于python
+
 
 ## 运行方式
 
