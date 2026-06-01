@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>打印机 — PyPrint</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Microsoft+YaHei,Segoe+UI:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="print-container">
+        <header class="print-header">
+            <div class="header-brand">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <rect x="6" y="14" width="12" height="8" rx="1"/>
+                    <path d="M6 14V8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v6"/>
+                    <rect x="6" y="2" width="12" height="6" rx="1"/>
+                </svg>
+                <span class="brand-text">PyPrint</span>
+            </div>
+            {% if current_user %}
+            <div class="header-user">
+                <span>{{ current_user.username }}</span>
+                <a href="{{ url_for('logout') }}">退出</a>
+            </div>
+            {% endif %}
+        </header>
+
+        <main class="print-main">
+            <div class="print-section" style="border-radius: 4px;">
+                <h3 class="section-title">可用打印机</h3>
+                <p class="printer-status">检测到 {{ printers|length }} 台打印机</p>
+
+                <div class="printers-list">
+                    {% for printer in printers %}
+                    <div class="printer-item">
+                        <div class="printer-info">
+                            <svg class="printer-icon" width="24" height="24" viewBox="0 0 2424" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <rect x="6" y="14" width="12" height="8" rx="1"/>
+                                <path d="M6 14V8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v6"/>
+                                <rect x="6" y="2" width="12" height="6" rx="1"/>
+                            </svg>
+                            <div>
+                                <span class="printer-name">{{ printer.name }}</span>
+                                {% if printer.is_default %}
+                                <span class="badge-default">默认</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="printer-state">
+                            <span class="status-indicator status-ready"></span>
+                            <span class="status-text">{{ printer.status|capitalize }}</span>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="no-printers">
+                        <p>未找到打印机。请确保打印机已连接并开机。</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="print-section section-actions" style="border-radius: 4px; margin-top: 16px;">
+                <a href="/" class="btn btn-secondary btn-large">返回打印</a>
+            </div>
+        </main>
+    </div>
+
+    <style>
+    .printers-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .printer-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background-color: #fafafa;
+        border: 1px solid #e8e8e8;
+        border-radius: 4px;
+    }
+
+    .printer-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .printer-icon {
+        color: #666;
+    }
+
+    .printer-name {
+        font-weight: 500;
+        color: #1a1a1a;
+    }
+
+    .badge-default {
+        display: inline-block;
+        margin-left: 8px;
+        padding: 2px 8px;
+        font-size: 10px;
+        font-weight: 500;
+        text-transform: uppercase;
+        background-color: #0078d4;
+        color: #fff;
+        border-radius: 3px;
+    }
+
+    .printer-state {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .status-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+
+    .status-ready {
+        background-color: #107c10;
+    }
+
+    .status-busy {
+        background-color: #d4a017;
+    }
+
+    .status-text {
+        font-size: 12px;
+        color: #666;
+    }
+
+    .no-printers {
+        padding: 24px;
+        text-align: center;
+        color: #666;
+    }
+    </style>
+</body>
+</html>

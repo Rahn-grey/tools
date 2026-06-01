@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>打印历史 — PyPrint</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Microsoft+YaHei,Segoe+UI:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="print-container">
+        <header class="print-header">
+            <div class="header-brand">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <rect x="6" y="14" width="12" height="8" rx="1"/>
+                    <path d="M6 14V8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v6"/>
+                    <rect x="6" y="2" width="12" height="6" rx="1"/>
+                </svg>
+                <span class="brand-text">PyPrint</span>
+                <span style="margin-left: 12px; color: #666; font-size: 12px;">打印历史</span>
+            </div>
+            {% if current_user %}
+            <div class="header-user">
+                {% if current_user.role == 'admin' %}
+                <a href="{{ url_for('admin_page') }}">管理</a>
+                <span style="margin: 0 8px; color: #ccc;">|</span>
+                {% endif %}
+                <a href="{{ url_for('index') }}">打印</a>
+                <span style="margin: 0 8px; color: #ccc;">|</span>
+                <span>{{ current_user.username }}</span>
+                <a href="{{ url_for('logout') }}">退出</a>
+            </div>
+            {% endif %}
+        </header>
+
+        <main class="print-main">
+            <!--统计概览 -->
+            <div class="print-section" style="border-radius: 4px;">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-jobs">-</div>
+                        <div class="stat-label">打印次数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-pages">-</div>
+                        <div class="stat-label">总页数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-copies">-</div>
+                        <div class="stat-label">总份数</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 打印记录列表 -->
+            <div class="print-section" style="border-radius: 4px; margin-top: 16px;">
+                <div class="history-toolbar">
+                    <h3 class="section-title" style="margin-bottom: 0;">打印记录</h3>
+                    <button class="btn btn-secondary btn-small" id="btn-refresh">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"/>
+                            <polyline points="1 20 1 14 7 14"/>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                        </svg>
+                        刷新
+                    </button>
+                </div>
+
+                <div class="history-list" id="history-list">
+                    <p style="color: #999; text-align: center; padding: 40px;">加载中...</p>
+                </div>
+
+                <div class="history-pagination" id="history-pagination" hidden>
+                    <button class="btn btn-secondary btn-small" id="btn-prev" disabled>上一页</button>
+                    <span class="pagination-info" id="pagination-info"></span>
+                    <button class="btn btn-secondary btn-small" id="btn-next">下一页</button>
+                </div>
+            </div>
+
+            <div class="section-actions" style="border-radius: 4px; margin-top: 16px;">
+                <a href="/" class="btn btn-secondary btn-large">返回打印</a>
+            </div>
+        </main>
+    </div>
+
+    <script>
+    (function() {
+        'use strict';
+
+        var page = 0;
+        var limit = 20;
+        var totalJobs = 0;
+
+        function loadHistory(reset) {
+            if (reset) {
+                page = 0;
+            }
+
+            var container = document.getElementById('history-list');
+            container.innerHTML = '<p style="color: #999; text-align: center; padding: 40px;">加载中...</p>';
+
+            var offset = page * limit;
+            fetch('/api/print-history?limit=' + limit + '&offset=' + offset)
+                .then(function(res) { return res.json(); })
+                .then(function(jobs) {
+                    if (jobs.length === 0) {
+                        container.innerHTML = '<p style="color: #999; text-align: center; padding: 40px;">暂无打印记录</p>';
+                        document.getElementById('history-pagination').hidden = true;
+                        return;
+                    }
+
+                    totalJobs = jobs.length;
+                    container.innerHTML = jobs.map(function(job) {
+                        return '<div class="history-item">' +
+                            '<div class="history-info">' +
+                            '<span class="history-file">' + job.file_name + '</span>' +
+                            '<span class="history-meta">' + (job.user_id || 'unknown') + ' · ' + job.printer_name + ' · ' + job.copies + '份 · ' + new Date(job.submitted_at).toLocaleString() + '</span>' +
+                            '</div>' +
+                            '<span class="history-status status-' + job.status + '">' + (job.status === 'completed' ? '完成' : '失败') + '</span>' +
+                            '</div>';
+                    }).join('');
+
+                    document.getElementById('history-pagination').hidden = false;
+                    updatePagination();
+                })
+                .catch(function() {
+                    container.innerHTML = '<p style="color: #d13438; text-align: center; padding: 40px;">加载失败</p>';
+                });
+        }
+
+        function loadStats() {
+            fetch('/api/print-stats')
+                .then(function(res) { return res.json(); })
+                .then(function(stats) {
+                    document.getElementById('stat-jobs').textContent = stats.total_jobs || 0;
+                    document.getElementById('stat-pages').textContent = stats.total_pages || 0;
+                    document.getElementById('stat-copies').textContent = stats.total_copies || 0;
+                })
+                .catch(function() {
+                    console.error('Failed to load stats');
+                });
+        }
+
+        function updatePagination() {
+            var btnPrev = document.getElementById('btn-prev');
+            var btnNext = document.getElementById('btn-next');
+            var info = document.getElementById('pagination-info');
+
+            btnPrev.disabled = page === 0;
+            btnNext.disabled = totalJobs < limit;
+            info.textContent = '第 ' + (page + 1) + ' 页';
+        }
+
+        document.getElementById('btn-refresh').addEventListener('click', function() {
+            loadHistory(true);
+            loadStats();
+        });
+
+        document.getElementById('btn-prev').addEventListener('click', function() {
+            if (page > 0) {
+                page--;
+                loadHistory();
+            }
+        });
+
+        document.getElementById('btn-next').addEventListener('click', function() {
+            page++;
+            loadHistory();
+        });
+
+        loadHistory();
+        loadStats();
+    })();
+    </script>
+
+    <style>
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+    }
+
+    .stat-card {
+        background-color: #fafafa;
+        border: 1px solid #e8e8e8;
+        border-radius: 4px;
+        padding: 16px;
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 28px;
+        font-weight: 600;
+        color: #0078d4;
+    }
+
+    .stat-label {
+        font-size: 12px;
+        color: #666;
+        margin-top: 4px;
+    }
+
+    .history-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+    }
+
+    .btn-small {
+        height: 28px;
+        padding: 0 12px;
+        font-size: 12px;
+    }
+
+    .history-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .history-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background-color: #fafafa;
+        border: 1px solid #e8e8e8;
+        border-radius: 4px;
+    }
+
+    .history-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0;
+    }
+
+    .history-file {
+        font-weight: 500;
+        color: #1a1a1a;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .history-meta {
+        font-size: 11px;
+        color: #666;
+    }
+
+    .history-status {
+        font-size: 12px;
+        padding: 2px 8px;
+        border-radius: 3px;
+        flex-shrink: 0;
+    }
+
+    .status-completed {
+        background-color: #e6f4ea;
+        color: #107c10;
+    }
+
+    .status-failed {
+        background-color: #fce8e6;
+        color: #d13438;
+    }
+
+    .history-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        margin-top: 16px;
+    }
+
+    .pagination-info {
+        font-size: 12px;
+        color: #666;
+    }
+
+    @media (max-width: 600px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    </style>
+</body>
+</html>

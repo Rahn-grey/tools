@@ -1,0 +1,633 @@
+/* PyPrint - Windows Print Dialog Style */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Microsoft YaHei', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 13px;
+    color: #1a1a1a;
+    background-color: #f3f3f3;
+    min-height: 100vh;
+}
+
+.print-container {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+/* Header */
+.print-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding: 0 4px;
+}
+
+.header-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #0078d4;
+}
+
+.header-brand svg {
+    color: #0078d4;
+}
+
+.brand-text {
+    font-size: 18px;
+    font-weight: 500;
+    color: #1a1a1a;
+}
+
+.header-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    color: #666;
+}
+
+.header-user a {
+    color: #0078d4;
+    text-decoration: none;
+}
+
+.header-user a:hover {
+    text-decoration: underline;
+}
+
+/* Main Form */
+.print-main {
+    position: relative;
+}
+
+.print-form {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* Sections */
+.print-section {
+    background-color: #fff;
+    padding: 16px 20px;
+    border: 1px solid #e0e0e0;
+}
+
+.print-section:first-child {
+    border-radius: 4px 4px 0 0;
+}
+
+.print-section:last-of-type {
+    border-radius: 0 0 4px 4px;
+}
+
+.section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 12px;
+}
+
+.section-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 20px;
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 0 0 4px 4px;
+}
+
+/* Drop Zone */
+.file-section {
+    padding: 24px 20px;
+}
+
+.drop-zone {
+    border: 2px dashed #c8c8c8;
+    border-radius: 4px;
+    padding: 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background-color 0.15s;
+    min-height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.drop-zone:hover,
+.drop-zone.dragover {
+    border-color: #0078d4;
+    background-color: rgba(0, 120, 212, 0.04);
+}
+
+.drop-zone-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: #666;
+}
+
+.drop-icon {
+    color: #999;
+}
+
+.drop-text {
+    font-size: 14px;
+    color: #333;
+}
+
+.drop-hint {
+    font-size: 12px;
+    color: #999;
+}
+
+.file-preview {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+}
+
+.file-preview[hidden] {
+    display: none;
+}
+
+.file-icon {
+    color: #0078d4;
+    flex-shrink: 0;
+}
+
+.file-info {
+    flex: 1;
+    text-align: left;
+    min-width: 0;
+}
+
+.file-name {
+    display: block;
+    font-size: 13px;
+    color: #1a1a1a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-size {
+    display: block;
+    font-size: 11px;
+    color: #999;
+    margin-top: 2px;
+}
+
+.btn-remove {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #999;
+    border-radius: 4px;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.btn-remove:hover {
+    background-color: #f0f0f0;
+    color: #666;
+}
+
+/* Form Elements */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-label {
+    font-size: 12px;
+    color: #666;
+}
+
+.form-select,
+.form-input {
+    height: 32px;
+    padding: 0 10px;
+    font-family: inherit;
+    font-size: 13px;
+    color: #1a1a1a;
+    background-color: #fff;
+    border: 1px solid #c8c8c8;
+    border-radius: 4px;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.form-select:focus,
+.form-input:focus {
+    border-color: #0078d4;
+}
+
+.form-select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 32px;
+}
+
+.form-input:disabled {
+    background-color: #f5f5f5;
+    color: #999;
+}
+
+.page-range-input {
+    margin-top: 10px;
+}
+
+/* Printer Section */
+.printer-section {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+}
+
+.printer-section .form-group {
+    flex: 1;
+}
+
+.btn-refresh {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 1px solid #c8c8c8;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #666;
+    transition: background-color 0.15s;
+}
+
+.btn-refresh:hover {
+    background-color: #f0f0f0;
+}
+
+.printer-status {
+    font-size: 11px;
+    color: #666;
+    margin-top: 8px;
+}
+
+/* Copies Row */
+.copies-row {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.copies-control {
+    display: flex;
+    align-items: center;
+}
+
+.btn-copies {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f5f5f5;
+    border: 1px solid #c8c8c8;
+    font-size: 16px;
+    color: #333;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.btn-copies:first-child {
+    border-radius: 4px 0 0 4px;
+}
+
+.btn-copies:last-child {
+    border-radius: 0 4px 4px 0;
+    border-left: none;
+}
+
+.btn-copies:hover {
+    background-color: #e8e8e8;
+}
+
+.copies-input {
+    width: 56px;
+    text-align: center;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    -moz-appearance: textfield;
+}
+
+.copies-input::-webkit-outer-spin-button,
+.copies-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* Page Range Options */
+.page-range-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.radio-label input[type="radio"] {
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+}
+
+/* Settings Grid */
+.settings-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+/* Orientation Group */
+.orientation-group {
+    display: flex;
+    gap: 8px;
+}
+
+.radio-img {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 12px;
+    border: 1px solid #c8c8c8;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    color: #666;
+    transition: border-color 0.15s;
+}
+
+.radio-img:hover {
+    border-color: #999;
+}
+
+.radio-img:has(input:checked) {
+    border-color: #0078d4;
+    background-color: rgba(0, 120, 212, 0.08);
+    color: #0078d4;
+}
+
+.radio-img input[type="radio"] {
+    display: none;
+}
+
+.radio-img svg {
+    color: currentColor;
+}
+
+/* Scaling */
+.scaling-control {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.scaling-input {
+    width: 64px;
+    text-align: center;
+}
+
+.input-suffix {
+    font-size: 12px;
+    color: #666;
+}
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 36px;
+    padding: 0 20px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.btn-primary {
+    background-color: #0078d4;
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background-color: #106ebe;
+}
+
+.btn-primary:disabled {
+    background-color: #c8c8c8;
+    color: #999;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background-color: #f5f5f5;
+    color: #333;
+    border: 1px solid #c8c8c8;
+}
+
+.btn-secondary:hover {
+    background-color: #e8e8e8;
+}
+
+.btn-large {
+    height: 40px;
+    padding: 0 24px;
+    font-size: 14px;
+}
+
+/* Print Feedback */
+.print-feedback {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.3);
+    z-index: 100;
+}
+
+.print-feedback[hidden] {
+    display: none;
+}
+
+.feedback-content {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 32px 40px;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    min-width: 300px;
+}
+
+.feedback-icon {
+    margin-bottom: 16px;
+}
+
+.icon-success {
+    color: #107c10;
+}
+
+.icon-error {
+    color: #d13438;
+}
+
+.feedback-message {
+    font-size: 14px;
+    color: #1a1a1a;
+    margin-bottom: 20px;
+}
+
+/* Printer Tabs */
+.printer-tabs {
+    display: flex;
+    flex-direction: column;
+}
+
+.printer-tabs-header {
+    display: flex;
+    gap: 0;
+    margin-bottom: 16px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.printer-tab {
+    padding: 8px 16px;
+    background: none;
+    border: none;
+    font-size: 13px;
+    color: #666;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.printer-tab:hover {
+    color: #333;
+}
+
+.printer-tab.active {
+    color: #0078d4;
+    border-bottom-color: #0078d4;
+}
+
+.printer-tab-content {
+    /* content shown/hidden by JS */
+}
+
+/* Printer Status List */
+.printers-status-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.printer-status-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background-color: #fafafa;
+    border: 1px solid #e8e8e8;
+    border-radius: 4px;
+}
+
+.printer-status-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.printer-status-name {
+    font-weight: 500;
+    color: #1a1a1a;
+}
+
+.printer-status-state {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .print-container {
+        padding: 12px;
+    }
+
+    .settings-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .copies-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .section-actions {
+        flex-direction: column;
+    }
+
+    .section-actions .btn {
+        width: 100%;
+    }
+}

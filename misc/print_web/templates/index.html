@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PyPrint — 打印</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Microsoft+YaHei,Segoe+UI:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="print-container">
+        <!-- 标题栏 -->
+        <header class="print-header">
+            <div class="header-brand">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <rect x="6" y="14" width="12" height="8" rx="1"/>
+                    <path d="M6 14V8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v6"/>
+                    <rect x="6" y="2" width="12" height="6" rx="1"/>
+                </svg>
+                <span class="brand-text">PyPrint</span>
+            </div>
+            {% if current_user %}
+            <div class="header-user">
+                {% if current_user.role == 'admin' %}
+                <a href="{{ url_for('admin_page') }}">管理</a>
+                <span style="margin: 0 8px; color: #ccc;">|</span>
+                {% endif %}
+                <a href="{{ url_for('print_history_page') }}">历史</a>
+                <span style="margin: 0 8px; color: #ccc;">|</span>
+                <span>{{ current_user.username }}</span>
+                <a href="{{ url_for('logout') }}">退出</a>
+            </div>
+            {% endif %}
+        </header>
+
+       <main class="print-main">
+            <form id="print-form" class="print-form">
+                <!-- 文件选择 -->
+                <section class="print-section file-section">
+                    <div class="drop-zone" id="drop-zone">
+                        <input type="file" id="file-input" name="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.bmp,.tiff,.txt" hidden>
+                        <div class="drop-zone-content" id="drop-zone-content">
+                            <svg class="drop-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            <p class="drop-text">将文件拖放到此处或点击浏览</p>
+                            <p class="drop-hint">支持 PDF、Word、Excel、图片格式</p>
+                        </div>
+                        <div class="file-preview" id="file-preview" hidden>
+                            <svg class="file-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                            </svg>
+                            <div class="file-info">
+                                <span class="file-name" id="file-name"></span>
+                                <span class="file-size" id="file-size"></span>
+                            </div>
+                            <button type="button" class="btn-remove" id="btn-remove">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="18" y1="6" x2="6" y2="18"/>
+                                    <line x1="6" y1="6" x2="18" y2="18"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 打印机选择 -->
+                <section class="print-section">
+                    <div class="printer-tabs">
+                        <div class="printer-tabs-header">
+                            <button class="printer-tab active" data-tab="select">选择打印机</button>
+                            <button class="printer-tab" data-tab="status">打印机状态</button>
+                        </div>
+
+                        <div class="printer-tab-content" id="tab-select">
+                            <div class="form-group">
+                                <select id="printer-select" name="printer" class="form-select" required>
+                                    <option value="">请选择打印机...</option>
+                                </select>
+                               <button type="button" class="btn-refresh" id="btn-refresh-printers" title="刷新打印机列表">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="23 4 23 10 17 10"/>
+                                        <polyline points="1 20 1 14 7 14"/>
+                                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                                    </svg>
+                               </button>
+                            </div>
+                           <div class="printer-status" id="printer-status"></div>
+                        </div>
+
+                        <div class="printer-tab-content" id="tab-status" hidden>
+                            <div class="printers-status-list" id="printers-status-list">
+                                <p style="color: #999; text-align: center; padding: 20px;">加载中...</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 份数 -->
+                <section class="print-section">
+                    <h3 class="section-title">份数</h3>
+                    <div class="copies-row">
+                        <div class="copies-control">
+                            <button type="button" class="btn-copies" id="btn-minus">−</button>
+                            <input type="number" id="copies-input" name="copies" value="1" min="1" max="999" class="form-input copies-input">
+                            <button type="button" class="btn-copies" id="btn-plus">+</button>
+                        </div>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="collate-checkbox" checked>
+                            <span>逐份打印</span>
+                        </label>
+                   </div>
+                </section>
+
+                <!-- 页面范围 -->
+                <section class="print-section">
+                    <h3 class="section-title">页面范围</h3>
+                    <div class="page-range-options">
+                        <label class="radio-label">
+                            <input type="radio" name="page_range_type" value="all" checked>
+                            <span>全部</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="page_range_type" value="pages">
+                            <span>页码</span>
+                        </label>
+                       <label class="radio-label">
+                            <input type="radio" name="page_range_type" value="selection">
+                            <span>选择内容</span>
+                        </label>
+                    </div>
+                    <input type="text" id="page-range-input" name="page_range" class="form-input page-range-input" placeholder="例如：1-3, 5, 7-10" disabled>
+                </section>
+
+                <!-- 纸张与布局 -->
+                <section class="print-section">
+                    <h3 class="section-title">纸张与布局</h3>
+                    <div class="settings-grid">
+                        <div class="form-group">
+                            <label class="form-label">纸张大小</label>
+                            <select id="paper-size" name="paper_size" class="form-select">
+                                <option value="auto">自动</option>
+                                <option value="A4" selected>A4 (210 x 297 毫米)</option>
+                                <option value="A3">A3 (297 x 420 毫米)</option>
+                                <option value="Letter">Letter (8.5 x 11 英寸)</option>
+                                <option value="Legal">Legal (8.5 x 14 英寸)</option>
+                                <option value="4x6">4x6 照片纸</option>
+                                <option value="5x7">5x7 照片纸</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">方向</label>
+                            <div class="orientation-group">
+                                <label class="radio-img">
+                                    <input type="radio" name="orientation" value="portrait" checked>
+                                    <svg width="32" height="40" viewBox="0 0 32 40" fill="none">
+                                        <rect x="4" y="2" width="24" height="36" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                                        <line x1="8" y1="8" x2="24" y2="8" stroke="currentColor" stroke-width="1"/>
+                                        <line x1="8" y1="14" x2="20" y2="14" stroke="currentColor" stroke-width="1"/>
+                                    </svg>
+                                    <span>纵向</span>
+                                </label>
+                                <label class="radio-img">
+                                    <input type="radio" name="orientation" value="landscape">
+                                    <svg width="40" height="32" viewBox="0 0 40 32" fill="none">
+                                        <rect x="2" y="4" width="36" height="24" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                                        <line x1="8" y1="8" x2="32" y2="8" stroke="currentColor" stroke-width="1"/>
+                                        <line x1="8" y1="14" x2="28" y2="14" stroke="currentColor" stroke-width="1"/>
+                                    </svg>
+                                    <span>横向</span>
+                                </label>
+                            </div>
+                        </div>
+                       <div class="form-group">
+                            <label class="form-label">纸张来源</label>
+                            <select id="paper-source" name="paper_source" class="form-select">
+                                <option value="auto" selected>自动选择</option>
+                                <option value="tray1">纸盒1</option>
+                                <option value="tray2">纸盒 2</option>
+                                <option value="manual">手动进纸</option>
+                                <option value="photo">照片纸盒</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">缩放</label>
+                            <div class="scaling-control">
+                                <input type="number" id="scaling-input" name="scaling" value="100" min="25" max="400" class="form-input scaling-input">
+                                <span class="input-suffix">%</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 质量与颜色 -->
+                <section class="print-section">
+                    <h3 class="section-title">质量与颜色</h3>
+                    <div class="settings-grid">
+                        <div class="form-group">
+                            <label class="form-label">打印质量</label>
+                            <select id="print-quality" name="print_quality" class="form-select">
+                                <option value="auto" selected>自动</option>
+                                <option value="draft">草稿</option>
+                                <option value="normal">普通</option>
+                                <option value="high">高品质</option>
+                               <option value="best">最佳</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">颜色</label>
+                            <select id="color-mode" name="color_mode" class="form-select">
+                                <option value="auto" selected>自动</option>
+                                <option value="color">彩色</option>
+                                <option value="grayscale">灰度</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 双面打印 -->
+                <section class="print-section">
+                    <h3 class="section-title">双面打印</h3>
+                    <select id="duplex-mode" name="duplex" class="form-select">
+                        <option value="none">关闭</option>
+                        <option value="long">长边翻转</option>
+                        <option value="short">短边翻转</option>
+                    </select>
+                </section>
+
+                <!-- 操作按钮 -->
+                <section class="print-section section-actions">
+                    <button type="button" class="btn btn-secondary btn-large" id="btn-cancel" onclick="window.location.href='/'">取消</button>
+                    <button type="button" class="btn btn-primary btn-large" id="btn-print" disabled>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="6" y="14" width="12" height="8" rx="1"/>
+                            <path d="M6 14V8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v6"/>
+                            <rect x="6" y="2" width="12" height="6" rx="1"/>
+                        </svg>
+                        打印
+                    </button>
+                </section>
+
+                <!-- 打印反馈 -->
+                <div class="print-feedback" id="print-feedback" hidden>
+                    <div class="feedback-content">
+                        <div class="feedback-icon" id="feedback-icon">
+                            <svg class="icon-success" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#5db872" stroke-width="2" hidden>
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            <svg class="icon-error" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#c64545" stroke-width="2" hidden>
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="15" y1="9" x2="9" y2="15"/>
+                                <line x1="9" y1="9" x2="15" y2="15"/>
+                            </svg>
+                        </div>
+                        <p class="feedback-message" id="feedback-message"></p>
+                        <button type="button" class="btn btn-secondary" id="btn-dismiss">确定</button>
+                    </div>
+                </div>
+            </form>
+        </main>
+    </div>
+
+    <script>
+    (function() {
+        'use strict';
+
+        function initFileUpload() {
+            var dropZone = document.getElementById('drop-zone');
+            var fileInput = document.getElementById('file-input');
+            var dropZoneContent = document.getElementById('drop-zone-content');
+            var filePreview = document.getElementById('file-preview');
+            var btnRemove = document.getElementById('btn-remove');
+            var fileName = document.getElementById('file-name');
+            var fileSize = document.getElementById('file-size');
+            var btnPrint = document.getElementById('btn-print');
+
+            if (!dropZone || !fileInput) return;
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(function(eventName) {
+                document.body.addEventListener(eventName, function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }, false);
+            });
+
+            dropZone.addEventListener('click', function(e) {
+                if (e.target.closest('.btn-remove')) return;
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', function() {
+                if (this.files && this.files.length > 0) {
+                    handleFileSelect(this.files[0]);
+                }
+            });
+
+            dropZone.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                this.classList.add('dragover');
+            });
+
+            dropZone.addEventListener('dragenter', function(e) {
+                this.classList.add('dragover');
+            });
+
+            dropZone.addEventListener('dragleave', function(e) {
+                if (!this.contains(e.relatedTarget)) {
+                    this.classList.remove('dragover');
+                }
+            });
+
+            dropZone.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.classList.remove('dragover');
+                var files = e.dataTransfer.files;
+                if (files && files.length > 0) {
+                    var dataTransfer = new DataTransfer();
+                    for (var i = 0; i < files.length; i++) {
+                        dataTransfer.items.add(files[i]);
+                    }
+                    fileInput.files = dataTransfer.files;
+                    handleFileSelect(files[0]);
+                }
+            });
+
+            if (btnRemove) {
+                btnRemove.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    resetFileInput();
+                });
+            }
+
+            function handleFileSelect(file) {
+                var ext = file.name.split('.').pop().toLowerCase();
+                var validExts = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'txt'];
+                if (!validExts.includes(ext)) {
+                    alert('不支持的文件类型。请使用 PDF、Word、Excel 或图片文件。');
+                    return;
+                }
+                showFilePreview(file);
+                if (btnPrint) btnPrint.disabled = false;
+            }
+
+            function showFilePreview(file) {
+                if (dropZoneContent) dropZoneContent.hidden = true;
+                if (filePreview) {
+                    filePreview.hidden = false;
+                    if (fileName) fileName.textContent = file.name;
+                    if (fileSize) fileSize.textContent = formatFileSize(file.size);
+                }
+            }
+
+        }
+
+        function resetFileInput() {
+            var fi = document.getElementById('file-input');
+            if (fi) fi.value = '';
+            var dz = document.getElementById('drop-zone-content');
+            if (dz) dz.hidden = false;
+            var fp = document.getElementById('file-preview');
+            if (fp) fp.hidden = true;
+            var bp = document.getElementById('btn-print');
+            if (bp) bp.disabled = true;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        function initCopiesControl() {
+            var copiesInput = document.getElementById('copies-input');
+            var btnMinus = document.getElementById('btn-minus');
+            var btnPlus = document.getElementById('btn-plus');
+
+            if (!copiesInput) return;
+
+            if (btnMinus) {
+                btnMinus.addEventListener('click', function() {
+                    var val = parseInt(copiesInput.value) || 1;
+                    if (val > 1) copiesInput.value = val - 1;
+                });
+            }
+
+            if (btnPlus) {
+                btnPlus.addEventListener('click', function() {
+                    var val = parseInt(copiesInput.value) || 1;
+                    if (val < 999) copiesInput.value = val + 1;
+                });
+            }
+        }
+
+        function initPageRange() {
+            var pageRangeInputs = document.querySelectorAll('input[name="page_range_type"]');
+            var pageRangeText = document.getElementById('page-range-input');
+
+            pageRangeInputs.forEach(function(input) {
+                input.addEventListener('change', function() {
+                    if (pageRangeText) {
+                        pageRangeText.disabled = (this.value !== 'pages');
+                    }
+                });
+            });
+        }
+
+        function initPrintButton() {
+            var btnPrint = document.getElementById('btn-print');
+            var fileInput = document.getElementById('file-input');
+            var printerSelect = document.getElementById('printer-select');
+            var feedback = document.getElementById('print-feedback');
+            var feedbackMessage = document.getElementById('feedback-message');
+            var feedbackIcon = document.getElementById('feedback-icon');
+            var btnDismiss = document.getElementById('btn-dismiss');
+
+            loadPrinters(); // 页面加载时自动加载打印机
+
+            btnPrint.addEventListener('click', async function() {
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    showFeedback(false, '请选择要打印的文件。');
+                    return;
+                }
+
+                if (!printerSelect.value) {
+                    showFeedback(false, '请选择打印机。');
+                    return;
+                }
+
+                btnPrint.disabled = true;
+                btnPrint.innerHTML = '<span>正在发送...</span>';
+
+                var formData = new FormData();
+                formData.append('file', fileInput.files[0]);
+                formData.append('printer', printerSelect.value);
+                formData.append('copies', document.getElementById('copies-input').value || 1);
+
+                var pageRangeType = document.querySelector('input[name="page_range_type"]:checked').value;
+                if (pageRangeType === 'pages') {
+                    var pageRange = document.getElementById('page-range-input').value.trim();
+                    if (pageRange) formData.append('page_range', pageRange);
+                }
+
+                formData.append('paper_size', document.getElementById('paper-size').value);
+                formData.append('orientation', document.querySelector('input[name="orientation"]:checked').value);
+                formData.append('paper_source', document.getElementById('paper-source').value);
+                formData.append('scaling', document.getElementById('scaling-input').value);
+                formData.append('print_quality', document.getElementById('print-quality').value);
+                formData.append('color_mode', document.getElementById('color-mode').value);
+                formData.append('duplex', document.getElementById('duplex-mode').value);
+                formData.append('collate', document.getElementById('collate-checkbox').checked ? '1' : '0');
+
+                try {
+                    var response = await fetch('/api/print', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    var result = await response.json();
+
+                    if (result.success) {
+                        showFeedback(true, result.message || '打印任务已成功发送！');
+                    } else {
+                        showFeedback(false, result.error || '打印失败，请重试。');
+                    }
+                } catch (error) {
+                    showFeedback(false, '网络错误，请检查网络连接。');
+                }
+
+                btnPrint.disabled = false;
+                btnPrint.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="14" width="12" height="8" rx="1"/><path d="M6 14V8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v6"/><rect x="6" y="2" width="12" height="6" rx="1"/></svg> 打印';
+            });
+
+            if (btnDismiss) {
+                btnDismiss.addEventListener('click', function() {
+                    hideFeedback();
+                    resetFileInput();
+                });
+            }
+
+            function showFeedback(success, message) {
+                if (feedback) feedback.hidden = false;
+                if (feedbackMessage) feedbackMessage.textContent = message;
+
+                var iconSuccess = feedbackIcon ? feedbackIcon.querySelector('.icon-success') : null;
+                var iconError = feedbackIcon ? feedbackIcon.querySelector('.icon-error') : null;
+
+                if (iconSuccess) iconSuccess.hidden = success !== true;
+                if (iconError) iconError.hidden = success === true;
+            }
+
+            function hideFeedback() {
+                if (feedback) feedback.hidden = true;
+            }
+        }
+
+        async function loadPrinters() {
+            var printerSelect = document.getElementById('printer-select');
+            var printerStatus = document.getElementById('printer-status');
+            if (!printerSelect) return;
+
+            try {
+                var response = await fetch('/api/printers');
+                var data = await response.json();
+
+                // 重建下拉选项，转义 HTML 特殊字符防止 XSS
+                var options = ['<option value="">请选择打印机...</option>'];
+                if (data.printers && data.printers.length > 0) {
+                    data.printers.forEach(function(printer) {
+                        var name = String(printer.name).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                        var label = name + (printer.is_default ? ' (默认)' : '');
+                        options.push('<option value="' + name + '"' +
+                            (printer.is_default ? ' selected' : '') + '>' + label + '</option>');
+                    });
+                } else {
+                    options.push('<option value="" disabled>未找到打印机</option>');
+                }
+                printerSelect.innerHTML = options.join('');
+
+                if (printerStatus) {
+                    var count = data.printers ? data.printers.length : 0;
+                    printerStatus.textContent = '检测到 ' + count + ' 台打印机';
+                }
+            } catch (error) {
+                console.error('加载打印机失败:', error);
+                if (printerStatus) printerStatus.textContent = '加载打印机失败';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initFileUpload();
+            initCopiesControl();
+            initPageRange();
+            initPrintButton();
+            initPrinterTabs();
+
+            document.getElementById('btn-refresh-printers').addEventListener('click', loadPrinters);
+        });
+
+        function initPrinterTabs() {
+            var tabs = document.querySelectorAll('.printer-tab');
+            tabs.forEach(function(tab) {
+                tab.addEventListener('click', function() {
+                    var tabName = this.getAttribute('data-tab');
+                    tabs.forEach(function(t) { t.classList.remove('active'); });
+                    this.classList.add('active');
+
+                    document.getElementById('tab-select').hidden = tabName !== 'select';
+                    document.getElementById('tab-status').hidden = tabName !== 'status';
+
+                    if (tabName === 'status') {
+                        loadPrinterStatuses();
+                    }
+                });
+            });
+        }
+
+        async function loadPrinterStatuses() {
+            var container = document.getElementById('printers-status-list');
+            if (!container) return;
+
+            try {
+                var response = await fetch('/api/printers');
+                var data = await response.json();
+
+                if (data.printers && data.printers.length > 0) {
+                    container.innerHTML = data.printers.map(function(printer) {
+                        var statusClass = printer.status === 'ready' ? 'status-ready' : 'status-busy';
+                        var statusText = printer.status === 'ready' ? '就绪' : '忙碌';
+                        return '<div class="printer-status-item">' +
+                            '<div class="printer-status-info">' +
+                            '<span class="printer-status-name">' + printer.name + '</span>' +
+                            (printer.is_default ? '<span class="badge-default">默认</span>' : '') +
+                            '</div>' +
+                            '<div class="printer-status-state">' +
+                            '<span class="status-indicator ' + statusClass + '"></span>' +
+                            '<span class="status-text">' + statusText + '</span>' +
+                            '</div>' +
+                            '</div>';
+                    }).join('');
+                } else {
+                    container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">未检测到打印机</p>';
+                }
+            } catch (error) {
+                container.innerHTML = '<p style="color: #d13438; text-align: center; padding: 20px;">加载失败</p>';
+            }
+        }
+
+    })();
+    </script>
+</body>
+</html>

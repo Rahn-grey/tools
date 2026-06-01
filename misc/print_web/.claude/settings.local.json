@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python *)",
+      "Bash(C:\\\\Users\\\\rahnl\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python310\\\\python.exe *)",
+      "Bash(conda activate *)",
+      "Bash(where python *)",
+      "Bash(SECRET_KEY=test123 PORT=5001 python *)",
+      "Bash(C:\\\\Users\\\\rahnl\\\\anaconda3\\\\envs\\\\dev\\\\python.exe *)",
+      "Bash(/c/Users/rahnl/anaconda3/envs/dev/python.exe *)",
+      "Bash(conda run *)",
+      "Bash(cmd *)"
+    ]
+  }
+}

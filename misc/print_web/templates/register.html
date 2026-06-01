@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册 — PyPrint</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Microsoft+YaHei,Segoe+UI:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <rect x="6" y="14" width="12" height="8" rx="1"/>
+                    <path d="M6 14V8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v6"/>
+                    <rect x="6" y="2" width="12" height="6" rx="1"/>
+                </svg>
+                <h1 class="login-title">PyPrint</h1>
+                <p class="login-subtitle">创建新账号</p>
+            </div>
+
+            {% if error %}
+            <div class="login-error">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="15" y1="9" x2="9" y2="15"/>
+                    <line x1="9" y1="9" x2="15" y2="15"/>
+                </svg>
+                <span>{{ error }}</span>
+            </div>
+            {% endif %}
+
+            <form class="login-form" method="POST" action="{{ url_for('register') }}">
+                <div class="form-group">
+                    <label class="form-label" for="username">用户名</label>
+                    <input type="text" id="username" name="username" class="form-input" placeholder="请输入用户名" required autofocus>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="password">密码</label>
+                    <input type="password" id="password" name="password" class="form-input" placeholder="请输入密码" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="email">邮箱（可选）</label>
+                    <input type="email" id="email" name="email" class="form-input" placeholder="请输入邮箱">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="activation_code">激活码</label>
+                    <input type="text" id="activation_code" name="activation_code" class="form-input" placeholder="请输入激活码" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-large btn-block">
+                    注册
+                </button>
+            </form>
+
+            <div class="login-footer">
+                <p class="login-hint">已有账号？<a href="{{ url_for('login') }}">立即登录</a></p>
+            </div>
+        </div>
+    </div>
+
+    <style>
+    body {
+        background-color: #f3f3f3;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+    }
+
+    .login-container {
+        width: 100%;
+        max-width: 360px;
+        padding: 20px;
+    }
+
+    .login-card {
+        background-color: #fff;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 32px;
+    }
+
+    .login-header {
+        text-align: center;
+        margin-bottom: 24px;
+    }
+
+    .login-header svg {
+        color: #0078d4;
+        margin-bottom: 12px;
+    }
+
+    .login-title {
+        font-size: 22px;
+        font-weight: 500;
+        color: #1a1a1a;
+        margin-bottom: 4px;
+    }
+
+    .login-subtitle {
+        font-size: 13px;
+        color: #666;
+    }
+
+    .login-form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .login-error {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px;
+        background-color: #fdf0f0;
+        border: 1px solid #f0c0c0;
+        border-radius: 4px;
+        color: #d13438;
+        font-size: 13px;
+        margin-bottom: 16px;
+    }
+
+    .btn-block {
+        width: 100%;
+    }
+
+    .login-footer {
+        margin-top: 20px;
+        text-align: center;
+    }
+
+    .login-hint {
+        font-size: 11px;
+        color: #999;
+    }
+
+    .login-hint a {
+        color: #0078d4;
+        text-decoration: none;
+    }
+
+    .login-hint a:hover {
+        text-decoration: underline;
+    }
+    </style>
+</body>
+</html>

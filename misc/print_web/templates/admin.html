@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台 — PyPrint</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Microsoft+YaHei,Segoe+UI:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="print-container">
+        <header class="print-header">
+            <div class="header-brand">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <rect x="6" y="14" width="12" height="8" rx="1"/>
+                    <path d="M6 14V8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v6"/>
+                    <rect x="6" y="2" width="12" height="6" rx="1"/>
+                </svg>
+                <span class="brand-text">PyPrint</span>
+               <span style="margin-left: 12px; color: #666; font-size: 12px;">管理后台</span>
+            </div>
+            {% if current_user %}
+            <div class="header-user">
+                <span>{{ current_user.username }}</span>
+                <a href="{{ url_for('logout') }}">退出</a>
+            </div>
+            {% endif %}
+        </header>
+
+        <main class="print-main">
+            <!--统计概览 -->
+            <div class="print-section" style="border-radius: 4px;">
+                <h3 class="section-title">统计概览</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="total-jobs">-</div>
+                        <div class="stat-label">总打印次数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="total-pages">-</div>
+                        <div class="stat-label">总打印页数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="total-users">-</div>
+                        <div class="stat-label">用户数</div>
+                    </div>
+                   <div class="stat-card">
+                        <div class="stat-value" id="active-codes">-</div>
+                        <div class="stat-label">可用激活码</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 修改密码 -->
+            <div class="print-section" style="border-radius: 4px; margin-top: 16px;">
+                <h3 class="section-title">修改密码</h3>
+                <div class="code-generator">
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label">旧密码</label>
+                        <input type="password" id="old-password" class="form-input" autocomplete="current-password">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label">新密码</label>
+                        <input type="password" id="new-password" class="form-input" autocomplete="new-password">
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="changePassword()">修改密码</button>
+                </div>
+            </div>
+
+            <!-- 激活码管理 -->
+            <div class="print-section" style="border-radius: 4px; margin-top: 16px;">
+                <h3 class="section-title">激活码管理</h3>
+
+                <div class="code-generator">
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label" for="expires_days">有效期（天）</label>
+                        <input type="number" id="expires_days" class="form-input" value="7" min="1" max="30">
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="generateCode()">生成激活码</button>
+                </div>
+
+                <div class="codes-list" id="codes-list">
+                    <p style="color: #999; text-align: center; padding: 20px;">加载中...</p>
+                </div>
+            </div>
+
+            <!-- 用户管理 -->
+            <div class="print-section" style="border-radius: 4px; margin-top: 16px;">
+                <h3 class="section-title">用户管理</h3>
+                <div class="users-list" id="users-list">
+                    <p style="color: #999; text-align: center; padding: 20px;">加载中...</p>
+                </div>
+            </div>
+
+            <!-- 打印记录 -->
+            <div class="print-section" style="border-radius: 4px; margin-top: 16px;">
+                <h3 class="section-title">最近打印记录</h3>
+                <div class="print-history" id="print-history">
+                    <p style="color: #999; text-align: center; padding: 20px;">加载中...</p>
+                </div>
+            </div>
+
+            <div class="section-actions" style="border-radius: 4px; margin-top: 16px;">
+                <a href="/" class="btn btn-secondary">返回打印</a>
+            </div>
+        </main>
+    </div>
+
+    <script>
+    async function loadData() {
+        // Load stats
+        const statsRes = await fetch('/api/print-stats');
+        if (statsRes.ok) {
+            const stats = await statsRes.json();
+            document.getElementById('total-jobs').textContent = stats.total_jobs || 0;
+            document.getElementById('total-pages').textContent = stats.total_pages || 0;
+        }
+
+        // Load users
+        const usersRes = await fetch('/api/users');
+        if (usersRes.ok) {
+            const users = await usersRes.json();
+            renderUsers(users);
+        }
+
+        // Load activation codes
+        loadCodes();
+
+        // Load print history
+        loadPrintHistory();
+    }
+
+    async function loadCodes() {
+        const res = await fetch('/api/activation-codes');
+        if (res.ok) {
+            const codes = await res.json();
+            renderCodes(codes);
+            document.getElementById('active-codes').textContent = codes.filter(c => !c.is_used).length;
+        }
+    }
+
+    function renderCodes(codes) {
+        const container = document.getElementById('codes-list');
+        if (!codes.length) {
+            container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">暂无激活码</p>';
+            return;
+        }
+
+        container.innerHTML = codes.map(code => `
+            <div class="code-item">
+                <div class="code-info">
+                    <span class="code-value">${code.code}</span>
+                    <span class="code-meta">
+                        ${code.is_used ? `<span style="color: #d13438;">已使用</span>` : `<span style="color: #107c10;">可用</span>`}
+                        · 有效期至 ${new Date(code.expires_at).toLocaleDateString()}
+                    </span>
+                </div>
+                <button class="btn btn-secondary btn-small" onclick="deleteCode('${code.code}')" ${code.is_used ? 'disabled' : ''}>删除</button>
+            </div>
+        `).join('');
+    }
+
+    async function generateCode() {
+        const expiresDays = document.getElementById('expires_days').value;
+        const res = await fetch('/api/activation-codes', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({expires_in_days: parseInt(expiresDays)})
+        });
+        if (res.ok) {
+            loadCodes();
+        }
+    }
+
+    async function deleteCode(code) {
+        if (!confirm('确定删除此激活码？')) return;
+        await fetch(`/api/activation-codes?code=${code}`, {method: 'DELETE'});
+        loadCodes();
+    }
+
+    function renderUsers(users) {
+        const container = document.getElementById('users-list');
+        document.getElementById('total-users').textContent = users.length;
+
+        if (!users.length) {
+            container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">暂无用户</p>';
+            return;
+        }
+
+        container.innerHTML = users.map(user => `
+            <div class="user-item">
+                <div class="user-info">
+                    <span class="user-name">${user.username}</span>
+                    <span class="user-meta">${user.role === 'admin' ? '<span style="color: #0078d4;">管理员</span>' : '用户'}</span>
+                </div>
+                <div class="user-actions">
+                    <span class="user-date">${new Date(user.created_at).toLocaleDateString()}</span>
+                    <button class="btn btn-secondary btn-small" onclick="resetUserPassword('${user.username}')">重置密码</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function loadPrintHistory() {
+        const res = await fetch('/api/print-history?limit=10');
+        if (res.ok) {
+            const jobs = await res.json();
+            renderPrintHistory(jobs);
+        }
+    }
+
+    function renderPrintHistory(jobs) {
+        const container = document.getElementById('print-history');
+        if (!jobs.length) {
+            container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">暂无打印记录</p>';
+            return;
+        }
+
+        container.innerHTML = `
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>时间</th>
+                        <th>用户</th>
+                        <th>打印机</th>
+                        <th>文件</th>
+                        <th>份数</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${jobs.map(job => `
+                        <tr>
+                            <td>${new Date(job.submitted_at).toLocaleString()}</td>
+                            <td>${job.user_id}</td>
+                            <td>${job.printer_name}</td>
+                            <td>${job.file_name}</td>
+                            <td>${job.copies}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    loadData();
+
+    async function changePassword() {
+        var oldPwd = document.getElementById('old-password').value;
+        var newPwd = document.getElementById('new-password').value;
+        if (!oldPwd || !newPwd) { alert('请填写旧密码和新密码'); return; }
+        if (newPwd.length < 4) { alert('新密码至少4位'); return; }
+        var res = await fetch('/api/change-password', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({old_password: oldPwd, new_password: newPwd})
+        });
+        var data = await res.json();
+        if (data.success) {
+            alert('密码修改成功');
+            document.getElementById('old-password').value = '';
+            document.getElementById('new-password').value = '';
+        } else {
+            alert(data.error || '修改失败');
+        }
+    }
+
+    async function resetUserPassword(username) {
+        if (!confirm('确定要重置用户 ' + username + ' 的密码吗？')) return;
+        var newPwd = prompt('请输入新密码（至少4位）：');
+        if (!newPwd) return;
+        if (newPwd.length < 4) { alert('新密码至少4位'); return; }
+        var res = await fetch('/api/admin-reset-password', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username: username, new_password: newPwd})
+        });
+        var data = await res.json();
+        if (data.success) {
+            alert('密码已重置');
+        } else {
+            alert(data.error || '重置失败');
+        }
+    }
+    </script>
+
+    <style>
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+    }
+
+    .stat-card {
+        background-color: #fafafa;
+        border: 1px solid #e8e8e8;
+        border-radius: 4px;
+        padding: 16px;
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 28px;
+        font-weight: 600;
+        color: #0078d4;
+    }
+
+    .stat-label {
+        font-size: 12px;
+        color: #666;
+        margin-top: 4px;
+    }
+
+    .code-generator {
+        display: flex;
+        gap: 12px;
+        align-items: flex-end;
+        margin-bottom: 16px;
+    }
+
+    .codes-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .code-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background-color: #fafafa;
+        border: 1px solid #e8e8e8;
+        border-radius: 4px;
+    }
+
+    .code-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .code-value {
+        font-family: monospace;
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: 2px;
+    }
+
+    .code-meta {
+        font-size: 11px;
+        color: #666;
+    }
+
+    .btn-small {
+        height: 28px;
+        padding: 0 12px;
+        font-size: 12px;
+    }
+
+    .users-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .user-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background-color: #fafafa;
+        border: 1px solid #e8e8e8;
+        border-radius: 4px;
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .user-name {
+        font-weight: 500;
+    }
+
+    .user-date {
+        font-size: 11px;
+        color: #999;
+        margin-right: 12px;
+    }
+
+    .user-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .history-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+
+    .history-table th,
+    .history-table td {
+        padding: 8px 12px;
+        text-align: left;
+        border-bottom: 1px solid #e8e8e8;
+    }
+
+    .history-table th {
+        color: #666;
+        font-weight: 500;
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    </style>
+</body>
+</html>
